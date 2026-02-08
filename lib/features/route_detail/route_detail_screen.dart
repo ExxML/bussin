@@ -290,8 +290,8 @@ class RouteDetailScreen extends ConsumerWidget {
 
   /// Builds the mini map showing the route polyline and active bus markers.
   ///
-  /// Uses FlutterMap with an OpenStreetMap TileLayer, a PolylineLayer for the
-  /// route shape, and a MarkerLayer for active bus positions.
+  /// Uses Google Maps (via google_maps_flutter) with a Polyline overlay for the
+  /// route shape and Markers for active bus positions.
   Widget _buildMiniMap(
     List<ll.LatLng> shapePoints,
     List<VehiclePositionModel> vehicles,

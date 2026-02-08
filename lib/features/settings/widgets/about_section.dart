@@ -10,7 +10,7 @@ import 'package:bussin/core/constants/app_constants.dart';
 ///   1. App name ("bussin!") from [AppConstants.appName]
 ///   2. Version ("1.0.0") from [AppConstants.appVersion]
 ///   3. TransLink data attribution text (REQUIRED by TransLink Terms of Service)
-///   4. OpenStreetMap attribution (for map tile data)
+///   4. Map attribution (for map data)
 ///   5. "Licenses" button to view open-source license information
 ///
 /// The TransLink attribution is mandatory per their API Terms of Service
@@ -49,9 +49,7 @@ class AboutSection extends StatelessWidget {
           ),
         ),
 
-        // --- OpenStreetMap attribution ---
-        // Required by the OpenStreetMap tile usage policy when displaying
-        // OSM-based map tiles in the app.
+        // --- Map attribution ---
         const Divider(height: 1),
         const ListTile(
           leading: Icon(Icons.map_outlined),

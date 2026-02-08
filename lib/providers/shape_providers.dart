@@ -21,7 +21,7 @@ final shapeRepositoryProvider = Provider<ShapeRepository>((ref) {
 /// Route polyline coordinates for a specific route.
 ///
 /// Returns an ordered [List<LatLng>] representing the geographic path
-/// of the route, suitable for rendering as a polyline on FlutterMap.
+/// of the route, suitable for rendering as a polyline on a map.
 ///
 /// Looks up the shape_id from any trip on the route, then fetches all
 /// shape points ordered by sequence. Returns an empty list if no shape
