@@ -21,7 +21,6 @@ A real-time Vancouver bus tracking app that shows live vehicle positions, ETAs, 
 - [🚀 Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [App Setup](#app-setup)
-- [🐳 Docker](#-docker)
 - [🏢 Deployment](#-deployment)
 - [🔧 Configuration](#-configuration)
 - [📡 API Endpoints](#-api-endpoints)
@@ -45,8 +44,8 @@ A real-time Vancouver bus tracking app that shows live vehicle positions, ETAs, 
 
 ### Mobile App
 
-- **Framework**: Flutter
 - **Language**: Dart
+- **Framework**: Flutter
 - **Maps**:
   - `google_maps_flutter` (Google Maps SDK)
 - **Location**: `geolocator` + `permission_handler`
@@ -84,13 +83,10 @@ bussin/
 
 ### Prerequisites
 
-- **Flutter SDK** (see `setup-guide.md`; `flutter doctor -v` should be clean)
+- **Flutter SDK** (install `flutter`; check with `flutter doctor -v` should be clean)
 - **Dart** (bundled with Flutter)
+- **A Google Maps SDK API Key** (required for map functionality)
 - **A TransLink API key** (required for GTFS-RT v3 endpoints)
-
-Optional (only if you plan to regenerate protobuf classes):
-
-- **protoc** + Dart `protoc_plugin` (see `setup-guide.md`)
 
 ### App Setup
 
@@ -99,56 +95,31 @@ Optional (only if you plan to regenerate protobuf classes):
    flutter pub get
    ```
 
-2. Run the app with your TransLink API key (recommended approach):
-   ```bash
-   flutter run --dart-define=TRANSLINK_API_KEY=your_key_here
-   ```
-
-3. (Optional) Code generation (Riverpod / Freezed / JSON):
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-
-More setup details (API key registration, Android/iOS permissions, protobuf tooling) are in `setup-guide.md`.
-
-## 🐳 Docker
-
-Docker is **not used** in this project (mobile Flutter app). If you later add a backend or want CI builds, you can containerize a Flutter build environment separately.
-
 ## 🏢 Deployment
 
-This repository builds a **mobile app** (Android/iOS) rather than a web backend.
+This repository builds a **mobile app** (Android/iOS).
 
 - **Android**:
   - Build APK:
     ```bash
-    flutter build apk --dart-define=TRANSLINK_API_KEY=your_key_here
+    flutter build apk
     ```
   - Build App Bundle (Play Store):
     ```bash
-    flutter build appbundle --dart-define=TRANSLINK_API_KEY=your_key_here
+    flutter build appbundle
     ```
 
 - **iOS** (macOS required):
   - Build iOS:
     ```bash
-    flutter build ios --dart-define=TRANSLINK_API_KEY=your_key_here
+    flutter build ios
     ```
-
-Important: treat `TRANSLINK_API_KEY` as a secret. Do not commit it to git.
 
 ## 🔧 Configuration
 
 ### TransLink API Key
 
-The app expects the API key to be supplied at build/run time:
-
-- **Recommended**: `--dart-define=TRANSLINK_API_KEY=...`
-- See `setup-guide.md` for alternative approaches and a full walkthrough.
-
-### Polling intervals and URLs
-
-The app polls GTFS-RT endpoints on intervals (vehicle positions more frequently than alerts). See `architecture.md` for the authoritative values and the constants used by the data layer.
+Go to the Settings tab in the app and follow the simple instructions to get a free permanent Translink API token.
 
 ## 📡 API Endpoints
 
@@ -177,8 +148,4 @@ The app consumes TransLink GTFS-RT v3 endpoints, which return **Protocol Buffer 
 
 ## 📝 License
 
-This repository currently does **not** include a `LICENSE` file.
-
-- If you intend this to be open source, add a license (MIT/Apache-2.0/GPL-3.0/etc.) and update this section.
-- Until then, assume standard copyright rules apply.
-
+This project is licensed under the GNU General Public License v3.0.
