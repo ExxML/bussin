@@ -1,6 +1,6 @@
 # bussin
 
-A new Flutter project.
+Our new Flutter project.
 
 ## Getting Started
 
