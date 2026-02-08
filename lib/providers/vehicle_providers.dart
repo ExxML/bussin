@@ -3,6 +3,7 @@ import 'package:bussin/core/constants/api_constants.dart';
 import 'package:bussin/data/datasources/translink_api_service.dart';
 import 'package:bussin/data/models/vehicle_position.dart';
 import 'package:bussin/data/repositories/vehicle_repository.dart';
+import 'package:bussin/providers/api_key_provider.dart';
 
 /// ---------------------------------------------------------------------------
 /// Vehicle Position Providers
@@ -14,10 +15,23 @@ import 'package:bussin/data/repositories/vehicle_repository.dart';
 
 /// Singleton instance of [TranslinkApiService] used across the app.
 ///
+/// Watches the [apiKeyProvider] so that whenever the user changes their
+/// API key in Settings, this service is automatically recreated with the
+/// new key. All downstream providers (vehicle, trip update, alert) will
+/// also rebuild since they watch this provider.
+///
 /// Provides the HTTP client for fetching raw protobuf bytes from
 /// TransLink's GTFS-RT endpoints.
 final translinkApiServiceProvider = Provider<TranslinkApiService>((ref) {
-  final service = TranslinkApiService();
+  // Watch the API key provider - when the key changes, this provider
+  // will rebuild and create a new TranslinkApiService with the updated key.
+  final apiKeyAsync = ref.watch(apiKeyProvider);
+
+  // Get the API key value, falling back to compile-time constant
+  // if the async provider hasn't loaded yet.
+  final apiKey = apiKeyAsync.value ?? ApiConstants.translinkApiKey;
+
+  final service = TranslinkApiService(apiKey: apiKey);
 
   // Clean up the HTTP client when the provider is disposed
   ref.onDispose(() => service.dispose());
