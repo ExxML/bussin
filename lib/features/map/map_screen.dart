@@ -18,7 +18,7 @@ import 'package:bussin/features/map/widgets/bus_info_bottom_sheet.dart';
 import 'package:bussin/features/map/controllers/map_controller_provider.dart';
 
 /// ---------------------------------------------------------------------------
-/// MapScreen - Main screen of the Bussin! app
+/// MapScreen - Main screen of the bussin! app
 /// ---------------------------------------------------------------------------
 /// This is the primary screen users see when they open the app. It composites
 /// several layers:
@@ -53,6 +53,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final navIconColor = CupertinoColors.label.resolveFrom(context);
+
     // --- Watch reactive state from providers ---
 
     // The currently selected route ID. Null means "show all buses" mode.
@@ -85,9 +87,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => AppRouter.pushHistory(context),
-          child: const Icon(
+          child: Icon(
             CupertinoIcons.clock,
-            color: CupertinoColors.white,
+            color: navIconColor,
             size: 24,
           ),
         ),
@@ -96,6 +98,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         trailing: _AlertBadgeButton(
           alertCount: alertCount,
           onPressed: () => AppRouter.pushAlerts(context),
+          iconColor: navIconColor,
         ),
       ),
 
@@ -126,7 +129,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               bottom: false,
               child: Padding(
                 // Extra top padding to sit below the transparent nav bar
-                padding: const EdgeInsets.only(top: 50, left: 16, right: 16),
+                padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -147,24 +150,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // ---- Layer 4: Bottom-right - Locate me button ----
-          // Circular button that centers the map on the user's GPS position.
+          // ---- Layer 4: Bottom controls (Nearby + Locate Me) ----
           Positioned(
-            bottom: 100,
-            right: 16,
-            child: LocateMeButton(
-              onPressed: () => _centerOnUser(mapNotifier),
-            ),
-          ),
-
-          // ---- Layer 5: Bottom-left - Nearby stops button ----
-          // Opens a draggable bottom sheet listing nearby transit stops
-          // with live arrival information.
-          Positioned(
-            bottom: 100,
             left: 16,
-            child: _NearbyButton(
-              onPressed: () => _showNearbyStopsSheet(context),
+            right: 16,
+            bottom: 0,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _NearbyButton(
+                      onPressed: () => _showNearbyStopsSheet(context),
+                    ),
+                    LocateMeButton(
+                      onPressed: () => _centerOnUser(mapNotifier),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -222,10 +228,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 class _AlertBadgeButton extends StatelessWidget {
   final int alertCount;
   final VoidCallback onPressed;
+  final Color iconColor;
 
   const _AlertBadgeButton({
     required this.alertCount,
     required this.onPressed,
+    required this.iconColor,
   });
 
   @override
@@ -237,9 +245,9 @@ class _AlertBadgeButton extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           // Bell icon
-          const Icon(
+          Icon(
             CupertinoIcons.bell,
-            color: CupertinoColors.white,
+            color: iconColor,
             size: 24,
           ),
 

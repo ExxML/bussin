@@ -1,9 +1,9 @@
-/// General application-wide constants for Bussin! transit app.
+/// General application-wide constants for bussin! transit app.
 class AppConstants {
   AppConstants._();
 
   /// Application display name.
-  static const String appName = 'Bussin!';
+  static const String appName = 'bussin!';
 
   /// Current application version.
   static const String appVersion = '1.0.0';

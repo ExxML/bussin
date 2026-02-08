@@ -7,7 +7,7 @@ import 'package:bussin/core/constants/app_constants.dart';
 /// ---------------------------------------------------------------------------
 /// Displays essential app metadata and legally required attribution text:
 ///
-///   1. App name ("Bussin!") from [AppConstants.appName]
+///   1. App name ("bussin!") from [AppConstants.appName]
 ///   2. Version ("1.0.0") from [AppConstants.appVersion]
 ///   3. TransLink data attribution text (REQUIRED by TransLink Terms of Service)
 ///   4. OpenStreetMap attribution (for map tile data)

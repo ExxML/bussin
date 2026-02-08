@@ -36,6 +36,22 @@ class SearchBarWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    final backgroundColor = isDark
+        ? const Color(0xFF1A1C20).withOpacity(0.92)
+        : CupertinoColors.systemBackground.withOpacity(0.7);
+
+    final placeholderStyle = TextStyle(
+      color: isDark
+          ? CupertinoColors.white.withOpacity(0.75)
+          : CupertinoColors.systemGrey,
+    );
+
+    final textStyle = TextStyle(
+      color: isDark ? CupertinoColors.white : CupertinoColors.label,
+    );
+
     return ClipRRect(
       // Rounded corners for the frosted glass container
       borderRadius: BorderRadius.circular(12),
@@ -51,7 +67,7 @@ class SearchBarWidget extends ConsumerWidget {
           // Semi-transparent background tinted with the system background color.
           // Combined with the blur, this creates the frosted glass look.
           decoration: BoxDecoration(
-            color: CupertinoColors.systemBackground.withOpacity(0.7),
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(12),
             // Subtle shadow for depth and separation from the map
             boxShadow: [
@@ -73,15 +89,18 @@ class SearchBarWidget extends ConsumerWidget {
             // AbsorbPointer prevents the CupertinoSearchTextField from
             // receiving focus/input events. We only want the tap gesture
             // to be handled by the GestureDetector above.
-            child: const AbsorbPointer(
+            child: AbsorbPointer(
               child: CupertinoSearchTextField(
                 // Placeholder text guides the user on what they can search for
                 placeholder: 'Search routes or stops...',
 
+                placeholderStyle: placeholderStyle,
+                style: textStyle,
+
                 // Disable the text field visually but keep its appearance.
                 // The enabled: false approach doesn't style correctly in
                 // Cupertino, so we use AbsorbPointer instead.
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               ),
             ),
           ),

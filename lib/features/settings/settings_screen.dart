@@ -250,6 +250,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // API keys are typically alphanumeric, no need for obscuring
               autocorrect: false,
               enableSuggestions: false,
+              spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
             ),
           ],
         ),

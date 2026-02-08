@@ -1,8 +1,8 @@
-# Bussin! - Architecture Document
+# bussin! - Architecture Document
 
 ## Overview
 
-**Bussin!** is a real-time Vancouver bus tracking app built with Flutter. It displays live bus positions on an OpenStreetMap-based map, provides ETA predictions, service alerts, and allows users to search by route or stop number. Data comes from TransLink's GTFS-RT V3 API (Protocol Buffer format) and GTFS Static data.
+**bussin!** is a real-time Vancouver bus tracking app built with Flutter. It displays live bus positions on an OpenStreetMap-based map, provides ETA predictions, service alerts, and allows users to search by route or stop number. Data comes from TransLink's GTFS-RT V3 API (Protocol Buffer format) and GTFS Static data.
 
 - **Platforms:** Android and iOS
 - **State Management:** Riverpod v3 (with code generation)
@@ -300,7 +300,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final brightness = ref.watch(themeProvider);
     return CupertinoApp(
-      title: 'Bussin!',
+      title: 'bussin!',
       theme: AppTheme.getTheme(brightness),
       home: const MainScaffold(),
       routes: AppRouter.routes,
@@ -357,7 +357,7 @@ FIT_BOUNDS_PADDING       - EdgeInsets.all(50.0)
 
 **Contents:**
 ```
-APP_NAME                 - 'Bussin!'
+APP_NAME                 - 'bussin!'
 APP_VERSION              - '1.0.0'
 TRANSLINK_ATTRIBUTION    - 'Route and arrival data used in this product or service
                             is provided by permission of TransLink. TransLink assumes
@@ -1725,7 +1725,7 @@ Writes to `themeProvider`.
 #### `lib/features/settings/widgets/about_section.dart`
 
 **Content:**
-- App name: "Bussin!"
+- App name: "bussin!"
 - Version: from `pubspec.yaml`
 - TransLink attribution text (required by ToS, displayed in full)
 - OpenStreetMap attribution

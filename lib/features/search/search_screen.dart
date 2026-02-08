@@ -178,6 +178,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 focusNode: _focusNode,
                 placeholder: 'Routes, stops, or stop codes',
                 onChanged: _onSearchChanged,
+                autocorrect: false,
                 // Pressing the clear button ('X') in the text field should
                 // also reset the provider so the UI switches back to
                 // recent searches.

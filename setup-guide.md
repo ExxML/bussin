@@ -1,4 +1,4 @@
-# Bussin! - Setup Guide and Reference
+# bussin! - Setup Guide and Reference
 
 This document covers environment setup, API key registration, platform configuration, and external references that are separate from the core architecture.
 
@@ -205,10 +205,10 @@ Add these keys:
 ```xml
 <!-- Location permission descriptions (REQUIRED) -->
 <key>NSLocationWhenInUseUsageDescription</key>
-<string>Bussin! needs your location to show nearby stops and your position on the map.</string>
+<string>bussin! needs your location to show nearby stops and your position on the map.</string>
 
 <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>Bussin! needs your location to notify you when your bus is approaching.</string>
+<string>bussin! needs your location to notify you when your bus is approaching.</string>
 
 <!-- Notification permission (requested at runtime, but description recommended) -->
 <key>UIBackgroundModes</key>

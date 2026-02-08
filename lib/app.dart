@@ -31,7 +31,7 @@ class BussinApp extends ConsumerWidget {
         : ThemeMode.light;
 
     return MaterialApp(
-      title: 'Bussin!',
+      title: 'bussin!',
       theme: AppTheme.getTheme(Brightness.light),
       darkTheme: AppTheme.getTheme(Brightness.dark),
       themeMode: themeMode,
