@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,7 +24,7 @@ import 'package:bussin/navigation/app_router.dart';
 /// │              [ Drag Handle ]             │
 /// │                                          │
 /// │  ┌──────┐                                │
-/// │  │  49  │  UBC / Metrotown              │
+/// │  │  49  │  UBC / Metrotown               │
 /// │  └──────┘  Last updated: 0:15            │
 /// │                                          │
 /// │  Speed: 32 km/h                          │
@@ -103,65 +104,73 @@ class _BusInfoBottomSheetState extends ConsumerState<BusInfoBottomSheet> {
 
     // Fetch the trip update for this vehicle's current trip.
     // Contains per-stop arrival predictions (ETAs).
-    final tripUpdateAsync = ref.watch(tripUpdateProvider(widget.vehicle.tripId));
+    final tripUpdateAsync =
+        ref.watch(tripUpdateProvider(widget.vehicle.tripId));
 
-    return Container(
-      // Limit sheet height to 55% of screen for readability
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.55,
-      ),
-      decoration: const BoxDecoration(
-        color: CupertinoColors.systemBackground,
-        // Rounded top corners for standard iOS bottom sheet appearance
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- Drag handle ---
-              // Visual affordance indicating the sheet can be dragged to dismiss.
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.systemGrey3,
-                    borderRadius: BorderRadius.circular(2.5),
+    // Wrapped in Material to fix yellow underline text issues
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        // Limit sheet height to 55% of screen for readability
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.55,
+        ),
+        // Match background to the navigation bar theme background color
+        decoration: BoxDecoration(
+          color: Theme.of(context).navigationBarTheme.backgroundColor ??
+              Theme.of(context).scaffoldBackgroundColor,
+          // Rounded top corners for standard iOS bottom sheet appearance
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- Drag handle ---
+                // Visual affordance indicating the sheet can be dragged to dismiss.
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    // Removed 'const' because CupertinoColors.systemGrey3 is dynamic
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGrey3,
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
                   ),
                 ),
-              ),
 
-              // --- Header: Route badge + headsign ---
-              _buildHeader(context, routeAsync),
+                // --- Header: Route badge + headsign ---
+                _buildHeader(context, routeAsync),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // --- Last updated timestamp ---
-              // Shows how fresh the position data is, so users can assess
-              // whether the bus has moved since the last GPS report.
-              _buildLastUpdated(),
+                // --- Last updated timestamp ---
+                // Shows how fresh the position data is, so users can assess
+                // whether the bus has moved since the last GPS report.
+                _buildLastUpdated(),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              // --- Speed display ---
-              // Converts speed from m/s (GTFS-RT format) to km/h for readability.
-              _buildSpeed(),
+                // --- Speed display ---
+                // Converts speed from m/s (GTFS-RT format) to km/h for readability.
+                _buildSpeed(),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // --- Upcoming stops with ETAs ---
-              _buildUpcomingStops(context, ref, tripUpdateAsync),
+                // --- Upcoming stops with ETAs ---
+                _buildUpcomingStops(context, ref, tripUpdateAsync),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // --- Action buttons ---
-              _buildActions(context),
-            ],
+                // --- Action buttons ---
+                _buildActions(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -499,7 +508,8 @@ class _UpcomingStopRow extends ConsumerWidget {
     // Calculate the ETA countdown string
     String etaText;
     if (predictedArrival != null) {
-      final secondsAway = predictedArrival!.difference(DateTime.now()).inSeconds;
+      final secondsAway =
+          predictedArrival!.difference(DateTime.now()).inSeconds;
       etaText = secondsAway > 0 ? TimeUtils.formatEta(secondsAway) : 'Now';
     } else {
       etaText = '--';
@@ -512,9 +522,7 @@ class _UpcomingStopRow extends ConsumerWidget {
           // --- Stop indicator dot ---
           // Filled circle for the next stop, outlined for subsequent stops
           Icon(
-            isNext
-                ? CupertinoIcons.circle_fill
-                : CupertinoIcons.circle,
+            isNext ? CupertinoIcons.circle_fill : CupertinoIcons.circle,
             size: 10,
             color: isNext
                 ? CupertinoColors.activeBlue
