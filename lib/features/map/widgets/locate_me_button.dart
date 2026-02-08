@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 /// ---------------------------------------------------------------------------
 /// LocateMeButton - Floating GPS button to center map on user location
@@ -36,6 +37,10 @@ class LocateMeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final backgroundColor =
+        theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
+
     return ClipOval(
       // ClipOval ensures the backdrop blur is circular (matching the button shape)
       child: BackdropFilter(
@@ -54,14 +59,16 @@ class LocateMeButton extends StatelessWidget {
             padding: EdgeInsets.zero,
             // Semi-transparent background over the blurred map content.
             // Using 70% opacity for readable button appearance.
-            color: CupertinoColors.systemBackground.withOpacity(0.7),
+            color: backgroundColor.withOpacity(0.8),
             borderRadius: BorderRadius.circular(22),
             onPressed: onPressed,
 
-            child: const Icon(
+            child: Icon(
               // Filled location arrow icon -- the standard iOS "locate me" icon
               CupertinoIcons.location_fill,
-              color: CupertinoColors.activeBlue,
+              color: theme.brightness == Brightness.dark
+                  ? const Color(0xFF80BFFF)
+                  : CupertinoColors.activeBlue,
               size: 22,
             ),
           ),

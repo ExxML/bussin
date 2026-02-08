@@ -66,7 +66,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // otherwise, show all vehicles from the master stream.
     final vehiclesAsync = selectedRouteId != null
         ? ref.watch(vehiclesForRouteProvider(selectedRouteId))
-        : ref.watch(allVehiclePositionsProvider);
+        : const AsyncData(<VehiclePositionModel>[]);
 
     // Number of active service alerts, displayed as a badge on the bell icon.
     final alertCount = ref.watch(activeAlertCountProvider);
@@ -342,6 +342,10 @@ class _NearbyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final backgroundColor =
+        theme.navigationBarTheme.backgroundColor ?? theme.colorScheme.surface;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: BackdropFilter(
@@ -349,13 +353,15 @@ class _NearbyButton extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: CupertinoButton(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: CupertinoColors.systemBackground.withOpacity(0.7),
+          color: backgroundColor.withOpacity(0.8),
           borderRadius: BorderRadius.circular(22),
           onPressed: onPressed,
-          child: const Text(
+          child: Text(
             'Nearby Stops',
             style: TextStyle(
-              color: CupertinoColors.activeBlue,
+              color: theme.brightness == Brightness.dark
+                  ? const Color(0xFF80BFFF)
+                  : CupertinoColors.activeBlue,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
