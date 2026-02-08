@@ -5,7 +5,6 @@ import 'package:bussin/features/settings/widgets/theme_toggle.dart';
 import 'package:bussin/features/settings/widgets/notification_settings.dart';
 import 'package:bussin/features/settings/widgets/about_section.dart';
 import 'package:bussin/providers/api_key_provider.dart';
-import 'package:bussin/providers/google_maps_api_key_provider.dart';
 
 /// ---------------------------------------------------------------------------
 /// SettingsScreen - App configuration and information
@@ -49,13 +48,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   /// Controller for the API key text field in the dialog.
   final TextEditingController _apiKeyController = TextEditingController();
 
-  final TextEditingController _googleMapsApiKeyController =
-      TextEditingController();
-
   @override
   void dispose() {
     _apiKeyController.dispose();
-    _googleMapsApiKeyController.dispose();
     super.dispose();
   }
 
@@ -63,7 +58,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     // Watch the API key provider to reactively display current key status.
     final apiKeyAsync = ref.watch(apiKeyProvider);
-    final googleMapsApiKeyAsync = ref.watch(googleMapsApiKeyProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -113,109 +107,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     trailing: const Icon(Icons.edit),
                     onTap: () => _showApiKeyDialog(context, apiKeyAsync.value),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(
-                      googleMapsApiKeyAsync.when(
-                        data: (key) =>
-                            key.isNotEmpty ? Icons.map : Icons.map_outlined,
-                        loading: () => Icons.hourglass_empty,
-                        error: (_, __) => Icons.error_outline,
-                      ),
-                      color: googleMapsApiKeyAsync.when(
-                        data: (key) => key.isNotEmpty
-                            ? Colors.green
-                            : Theme.of(context).colorScheme.error,
-                        loading: () => null,
-                        error: (_, __) => Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    title: const Text('Google Maps API Key'),
-                    subtitle: googleMapsApiKeyAsync.when(
-                      data: (key) => Text(
-                        key.isNotEmpty
-                            ? _maskApiKey(key)
-                            : 'Not set — tap to enter your key',
-                      ),
-                      loading: () => const Text('Loading...'),
-                      error: (_, __) => const Text('Error loading key'),
-                    ),
-                    trailing: const Icon(Icons.edit),
-                    onTap: () => _showGoogleMapsApiKeyDialog(
-                      context,
-                      googleMapsApiKeyAsync.value,
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  // Clear API key button — only enabled when a key is set.
-                  ListTile(
-                    leading: Icon(
-                      Icons.clear,
-                      color: apiKeyAsync.when(
-                        data: (key) => key.isNotEmpty
-                            ? Theme.of(context).colorScheme.error
-                            : Colors.grey,
-                        loading: () => Colors.grey,
-                        error: (_, __) => Colors.grey,
-                      ),
-                    ),
-                    title: Text(
-                      'Clear Saved Key',
-                      style: TextStyle(
-                        color: apiKeyAsync.when(
-                          data: (key) => key.isNotEmpty
-                              ? Theme.of(context).colorScheme.error
-                              : Colors.grey,
-                          loading: () => Colors.grey,
-                          error: (_, __) => Colors.grey,
-                        ),
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Reverts to compile-time key if available',
-                    ),
-                    onTap: apiKeyAsync.when(
-                      data: (key) =>
-                          key.isNotEmpty ? () => _confirmClearApiKey(context) : null,
-                      loading: () => null,
-                      error: (_, __) => null,
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(
-                      Icons.clear,
-                      color: googleMapsApiKeyAsync.when(
-                        data: (key) => key.isNotEmpty
-                            ? Theme.of(context).colorScheme.error
-                            : Colors.grey,
-                        loading: () => Colors.grey,
-                        error: (_, __) => Colors.grey,
-                      ),
-                    ),
-                    title: Text(
-                      'Clear Saved Maps Key',
-                      style: TextStyle(
-                        color: googleMapsApiKeyAsync.when(
-                          data: (key) => key.isNotEmpty
-                              ? Theme.of(context).colorScheme.error
-                              : Colors.grey,
-                          loading: () => Colors.grey,
-                          error: (_, __) => Colors.grey,
-                        ),
-                      ),
-                    ),
-                    subtitle: const Text(
-                      'Reverts to compile-time key if available',
-                    ),
-                    onTap: googleMapsApiKeyAsync.when(
-                      data: (key) => key.isNotEmpty
-                          ? () => _confirmClearGoogleMapsApiKey(context)
-                          : null,
-                      loading: () => null,
-                      error: (_, __) => null,
-                    ),
                   ),
                 ],
               ),
@@ -315,99 +206,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _showGoogleMapsApiKeyDialog(BuildContext context, String? currentKey) {
-    _googleMapsApiKeyController.text = currentKey ?? '';
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Google Maps API Key'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter your Google Maps Platform API key.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _googleMapsApiKeyController,
-              decoration: const InputDecoration(
-                labelText: 'API Key',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.map),
-              ),
-              autocorrect: false,
-              enableSuggestions: false,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final newKey = _googleMapsApiKeyController.text.trim();
-              if (newKey.isNotEmpty) {
-                ref.read(googleMapsApiKeyProvider.notifier).setApiKey(newKey);
-                Navigator.of(dialogContext).pop();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Maps API key saved successfully'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmClearGoogleMapsApiKey(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear Maps API Key'),
-        content: const Text(
-          'This will remove your saved Maps API key. '
-          'The app will revert to the compile-time key if available.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(googleMapsApiKeyProvider.notifier).clearApiKey();
-              Navigator.of(dialogContext).pop();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Maps API key cleared'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: Text(
-              'Clear',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Masks the API key for display, showing only the first 4 and last 4 characters.
   ///
-  /// Example: "iTn4tHRjuXPlukjNbfTK" => "iTn4************bfTK"
   /// This prevents the full key from being visible on screen.
   String _maskApiKey(String key) {
     if (key.length <= 8) return '*' * key.length;
@@ -443,7 +243,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               controller: _apiKeyController,
               decoration: const InputDecoration(
                 labelText: 'API Key',
-                hintText: 'e.g. iTn4tHRjuXPlukjNbfTK',
+                hintText: 'e.g. iTn4jOfWlBlPaFqYmgOT',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.vpn_key),
               ),
@@ -476,49 +276,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
             },
             child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Shows a confirmation dialog before clearing the saved API key.
-  ///
-  /// Warns the user that the app will fall back to the compile-time key
-  /// (if one was provided via --dart-define), or the app may stop
-  /// fetching data if no fallback key exists.
-  void _confirmClearApiKey(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Clear API Key'),
-        content: const Text(
-          'This will remove your saved API key. '
-          'The app will revert to the compile-time key if available, '
-          'or API calls will fail until a new key is entered.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              // Clear the saved key via the provider notifier
-              ref.read(apiKeyProvider.notifier).clearApiKey();
-              Navigator.of(dialogContext).pop();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('API key cleared'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: Text(
-              'Clear',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
           ),
         ],
       ),
