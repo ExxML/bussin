@@ -64,7 +64,7 @@ class BusMap extends ConsumerStatefulWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userPosition = ref.watch(currentLocationProvider).value;
+    final userLocationAsync = ref.watch(currentLocationProvider);
 
     final selectedRouteId = ref.watch(selectedRouteProvider);
 
@@ -87,16 +87,6 @@ class BusMap extends ConsumerStatefulWidget {
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         ),
     };
-
-    if (userPosition != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('user_location'),
-          position: LatLng(userPosition.latitude, userPosition.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        ),
-      );
-    }
 
     final polylines = <Polyline>{};
     final routePoints = shapeAsync.asData?.value ?? const <ll.LatLng>[];
@@ -135,7 +125,7 @@ class BusMap extends ConsumerStatefulWidget {
         target: LatLng(49.2827, -123.1207),
         zoom: 13.0,
       ),
-      myLocationEnabled: false,
+      myLocationEnabled: !userLocationAsync.hasError,
       myLocationButtonEnabled: false,
       compassEnabled: false,
       mapToolbarEnabled: false,
