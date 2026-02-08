@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,199 +80,206 @@ class StopDetailScreen extends ConsumerWidget {
       // --------------------------------------------------------------------
       // Screen body: scrollable content
       // --------------------------------------------------------------------
-      child: SafeArea(
-        child: stopAsync.when(
-          // Loading state: centered activity indicator.
-          loading: () => const Center(child: CupertinoActivityIndicator()),
+      // Wrapped in Material to fix yellow underline text issues
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          child: stopAsync.when(
+            // Loading state: centered activity indicator.
+            loading: () => const Center(child: CupertinoActivityIndicator()),
 
-          // Error state: display error message with retry option.
-          error: (error, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.exclamationmark_triangle,
-                  size: 48.0,
-                  color: CupertinoColors.systemGrey,
-                ),
-                const SizedBox(height: 12.0),
-                Text(
-                  'Failed to load stop: $error',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: CupertinoColors.systemGrey),
-                ),
-                const SizedBox(height: 12.0),
-                CupertinoButton(
-                  child: const Text('Retry'),
-                  onPressed: () => ref.invalidate(stopProvider(stopId)),
-                ),
-              ],
+            // Error state: display error message with retry option.
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Removed 'const' because CupertinoColors.systemGrey is dynamic
+                  const Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    size: 48.0,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                  const SizedBox(height: 12.0),
+                  Text(
+                    'Failed to load stop: $error',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                  const SizedBox(height: 12.0),
+                  CupertinoButton(
+                    child: const Text('Retry'),
+                    onPressed: () => ref.invalidate(stopProvider(stopId)),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Data loaded: build the full stop detail layout.
-          data: (stop) {
-            // Handle null stop (ID not found in database).
-            if (stop == null) {
-              return const Center(
-                child: Text(
-                  'Stop not found',
-                  style: TextStyle(color: CupertinoColors.systemGrey),
-                ),
+            // Data loaded: build the full stop detail layout.
+            data: (stop) {
+              // Handle null stop (ID not found in database).
+              if (stop == null) {
+                // Removed 'const' because CupertinoColors.systemGrey is dynamic
+                return const Center(
+                  child: Text(
+                    'Stop not found',
+                    style: TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                );
+              }
+
+              // Build a route lookup map from allRoutesProvider for fast
+              // access to route names and colors when rendering arrival tiles.
+              final routeMap = allRoutesAsync.when(
+                data: (routes) => {
+                  for (final route in routes) route.routeId: route,
+                },
+                loading: () => <String, BusRoute>{},
+                error: (_, __) => <String, BusRoute>{},
               );
-            }
 
-            // Build a route lookup map from allRoutesProvider for fast
-            // access to route names and colors when rendering arrival tiles.
-            final routeMap = allRoutesAsync.when(
-              data: (routes) => {
-                for (final route in routes) route.routeId: route,
-              },
-              loading: () => <String, BusRoute>{},
-              error: (_, __) => <String, BusRoute>{},
-            );
+              // Build a map from tripId -> TripUpdateModel so we can look up
+              // the route ID for each stop time update.
+              final tripUpdateMap = tripUpdatesAsync.when(
+                data: (updates) => {
+                  for (final update in updates) update.tripId: update,
+                },
+                loading: () => <String, TripUpdateModel>{},
+                error: (_, __) => <String, TripUpdateModel>{},
+              );
 
-            // Build a map from tripId -> TripUpdateModel so we can look up
-            // the route ID for each stop time update.
-            final tripUpdateMap = tripUpdatesAsync.when(
-              data: (updates) => {
-                for (final update in updates) update.tripId: update,
-              },
-              loading: () => <String, TripUpdateModel>{},
-              error: (_, __) => <String, TripUpdateModel>{},
-            );
+              // Extract the ETA list, or show empty while loading.
+              final etas = etasAsync.when(
+                data: (e) => e,
+                loading: () => <StopTimeUpdateModel>[],
+                error: (_, __) => <StopTimeUpdateModel>[],
+              );
 
-            // Extract the ETA list, or show empty while loading.
-            final etas = etasAsync.when(
-              data: (e) => e,
-              loading: () => <StopTimeUpdateModel>[],
-              error: (_, __) => <StopTimeUpdateModel>[],
-            );
+              // Build a combined list of arrival data by matching each ETA's
+              // stop time update back to its parent trip update to get the
+              // route ID, then looking up route metadata.
+              final arrivalEntries = _buildArrivalEntries(
+                etas,
+                tripUpdateMap,
+                routeMap,
+              );
 
-            // Build a combined list of arrival data by matching each ETA's
-            // stop time update back to its parent trip update to get the
-            // route ID, then looking up route metadata.
-            final arrivalEntries = _buildArrivalEntries(
-              etas,
-              tripUpdateMap,
-              routeMap,
-            );
-
-            return CustomScrollView(
-              slivers: [
-                // ----------------------------------------------------------
-                // Section 1: Stop info header with favorite toggle
-                // ----------------------------------------------------------
-                SliverToBoxAdapter(
-                  child: StopInfoHeader(stop: stop),
-                ),
-
-                // ----------------------------------------------------------
-                // Divider between header and arrivals
-                // ----------------------------------------------------------
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: _Divider(),
+              return CustomScrollView(
+                slivers: [
+                  // ----------------------------------------------------------
+                  // Section 1: Stop info header with favorite toggle
+                  // ----------------------------------------------------------
+                  SliverToBoxAdapter(
+                    child: StopInfoHeader(stop: stop),
                   ),
-                ),
 
-                // ----------------------------------------------------------
-                // Section 2: "Upcoming Arrivals" heading
-                // ----------------------------------------------------------
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
-                    child: Text(
-                      'Upcoming Arrivals',
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // ----------------------------------------------------------
-                // Section 3: List of arrival tiles sorted by ETA
-                // ----------------------------------------------------------
-                if (arrivalEntries.isEmpty)
+                  // ----------------------------------------------------------
+                  // Divider between header and arrivals
+                  // ----------------------------------------------------------
                   const SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 24.0,
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            CupertinoIcons.clock,
-                            size: 40.0,
-                            color: CupertinoColors.systemGrey3,
-                          ),
-                          SizedBox(height: 8.0),
-                          Text(
-                            'No upcoming arrivals',
-                            style: TextStyle(
-                              color: CupertinoColors.systemGrey,
-                              fontSize: 15.0,
-                            ),
-                          ),
-                          SizedBox(height: 4.0),
-                          Text(
-                            'Check back later for real-time predictions.',
-                            style: TextStyle(
-                              color: CupertinoColors.systemGrey2,
-                              fontSize: 13.0,
-                            ),
-                          ),
-                        ],
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: _Divider(),
+                    ),
+                  ),
+
+                  // ----------------------------------------------------------
+                  // Section 2: "Upcoming Arrivals" heading
+                  // ----------------------------------------------------------
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
+                      child: Text(
+                        'Upcoming Arrivals',
+                        style: TextStyle(
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  )
-                else
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final entry = arrivalEntries[index];
+                  ),
 
-                        return Row(
+                  // ----------------------------------------------------------
+                  // Section 3: List of arrival tiles sorted by ETA
+                  // ----------------------------------------------------------
+                  if (arrivalEntries.isEmpty)
+                    // Removed 'const' because CupertinoColors are dynamic
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 24.0,
+                        ),
+                        child: Column(
                           children: [
-                            // The arrival tile takes up most of the row.
-                            Expanded(
-                              child: ArrivalListTile(
-                                stopTimeUpdate: entry.stopTimeUpdate,
-                                routeId: entry.routeId,
-                                routeShortName: entry.routeShortName,
-                                headsign: entry.headsign,
-                                routeColor: entry.routeColor,
+                            Icon(
+                              CupertinoIcons.clock,
+                              size: 40.0,
+                              color: CupertinoColors.systemGrey3,
+                            ),
+                            SizedBox(height: 8.0),
+                            Text(
+                              'No upcoming arrivals',
+                              style: TextStyle(
+                                color: CupertinoColors.systemGrey,
+                                fontSize: 15.0,
                               ),
                             ),
-
-                            // Set Alert button on the right side of each row.
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8.0),
-                              child: SetAlertButton(
-                                routeId: entry.routeId,
-                                stopId: stopId,
-                                stopName: stop.stopName,
-                                routeShortName: entry.routeShortName,
+                            SizedBox(height: 4.0),
+                            Text(
+                              'Check back later for real-time predictions.',
+                              style: TextStyle(
+                                color: CupertinoColors.systemGrey2,
+                                fontSize: 13.0,
                               ),
                             ),
                           ],
-                        );
-                      },
-                      childCount: arrivalEntries.length,
-                    ),
-                  ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final entry = arrivalEntries[index];
 
-                // Bottom padding so content isn't flush with the screen edge.
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 32.0),
-                ),
-              ],
-            );
-          },
+                          return Row(
+                            children: [
+                              // The arrival tile takes up most of the row.
+                              Expanded(
+                                child: ArrivalListTile(
+                                  stopTimeUpdate: entry.stopTimeUpdate,
+                                  routeId: entry.routeId,
+                                  routeShortName: entry.routeShortName,
+                                  headsign: entry.headsign,
+                                  routeColor: entry.routeColor,
+                                ),
+                              ),
+
+                              // Set Alert button on the right side of each row.
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: SetAlertButton(
+                                  routeId: entry.routeId,
+                                  stopId: stopId,
+                                  stopName: stop.stopName,
+                                  routeShortName: entry.routeShortName,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        childCount: arrivalEntries.length,
+                      ),
+                    ),
+
+                  // Bottom padding so content isn't flush with the screen edge.
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 32.0),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -363,6 +371,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 0.5,
+      // Removed 'const' because resolveFrom uses context
       color: CupertinoColors.separator.resolveFrom(context),
     );
   }
