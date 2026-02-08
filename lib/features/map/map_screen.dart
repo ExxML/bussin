@@ -254,9 +254,9 @@ class _TopBar extends StatelessWidget
                 0, 0, -1, 0, 255,
                 0, 0, 0, 1, 0,
               ]),
-              child: Image.asset('assets/app_icon_white.png'),
+              child: Image.asset('assets/app_icon_transparent.png'),
             )
-          : Image.asset('assets/app_icon_white.png'),
+          : Image.asset('assets/app_icon_transparent.png'),
     );
 
     return Container(

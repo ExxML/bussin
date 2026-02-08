@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/app_icon_white.png" alt="bussin! Icon" width="120" height="120">
+<img src="assets/app_icon_white.png" alt="bussin! Icon" width="144" height="144">
 
 # bussin!
 
