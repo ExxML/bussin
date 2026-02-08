@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -171,6 +172,8 @@ class LocalDatabaseService {
   /// Processes [rows] in chunks of 1000 within a single database transaction.
   /// Uses [ConflictAlgorithm.replace] to handle duplicate keys gracefully.
   Future<void> _bulkInsert(String table, List<Map<String, dynamic>> rows) async {
+    debugPrint('[DB] Bulk inserting ${rows.length} rows into $table...');
+    final stopwatch = Stopwatch()..start();
     await db.transaction((txn) async {
       const chunkSize = 1000;
       for (int i = 0; i < rows.length; i += chunkSize) {
@@ -185,6 +188,8 @@ class LocalDatabaseService {
         await batch.commit(noResult: true);
       }
     });
+    stopwatch.stop();
+    debugPrint('[DB] ✓ $table insert complete (${rows.length} rows in ${stopwatch.elapsedMilliseconds}ms)');
   }
 
   /// Drops and recreates all GTFS static data tables.
@@ -192,10 +197,12 @@ class LocalDatabaseService {
   /// Called before re-importing GTFS data to ensure a clean state.
   /// Does NOT affect user data tables (favorites, route_history).
   Future<void> clearGtfsData() async {
+    debugPrint('[DB] clearGtfsData() — deleting all GTFS tables...');
     await db.execute('DELETE FROM gtfs_stop_times');
     await db.execute('DELETE FROM gtfs_shapes');
     await db.execute('DELETE FROM gtfs_trips');
     await db.execute('DELETE FROM gtfs_stops');
     await db.execute('DELETE FROM gtfs_routes');
+    debugPrint('[DB] ✓ All GTFS tables cleared');
   }
 }

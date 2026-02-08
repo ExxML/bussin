@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:bussin/data/datasources/gtfs_static_service.dart';
 import 'package:bussin/data/datasources/local_database_service.dart';
 import 'package:bussin/data/models/bus_stop.dart';
@@ -59,12 +60,14 @@ class StopRepository {
   /// the stop code exactly matches (for numeric lookups).
   /// Limited to 20 results for performance.
   Future<List<BusStop>> searchStops(String query) async {
+    debugPrint('[StopRepo] searchStops("$query") — querying SQLite...');
     final rows = await LocalDatabaseService.db.query(
       'gtfs_stops',
       where: 'stop_name LIKE ? OR stop_code = ?',
       whereArgs: ['%$query%', query],
       limit: 20,
     );
+    debugPrint('[StopRepo] searchStops("$query") → ${rows.length} results');
     return rows.map(_mapRowToStop).toList();
   }
 
@@ -102,7 +105,37 @@ class StopRepository {
   /// Invalidates the in-memory cache, forcing a reload from SQLite
   /// on the next [getAllStops] call.
   void clearCache() {
+    debugPrint('[StopRepo] In-memory cache cleared');
     _allStopsCache = null;
+  }
+
+  /// Forces a refresh of stop data from the GTFS static ZIP file.
+  ///
+  /// Downloads the latest GTFS data (if not already downloaded),
+  /// parses stops.txt CSV, and bulk-inserts into the database.
+  Future<void> refreshFromStatic() async {
+    debugPrint('[StopRepo] refreshFromStatic() — parsing stops.txt...');
+
+    final stopRows = await _gtfsService.parseCsvFile('stops.txt');
+    debugPrint('[StopRepo] Parsed ${stopRows.length} stops from stops.txt');
+
+    // Clear existing stop data
+    await LocalDatabaseService.db.delete('gtfs_stops');
+
+    // Map CSV rows to database column format
+    final dbRows = stopRows.map((row) => <String, dynamic>{
+      'stop_id': row['stop_id'] ?? '',
+      'stop_name': row['stop_name'] ?? '',
+      'stop_lat': double.tryParse(row['stop_lat'] ?? '0') ?? 0.0,
+      'stop_lon': double.tryParse(row['stop_lon'] ?? '0') ?? 0.0,
+      'stop_code': row['stop_code'],
+    }).toList();
+
+    await _dbService.bulkInsertStops(dbRows);
+    debugPrint('[StopRepo] ✓ Inserted ${dbRows.length} stops into SQLite');
+
+    // Invalidate in-memory cache so next getAllStops() reloads from DB
+    clearCache();
   }
 
   /// Maps a database row map to a [BusStop] domain model.

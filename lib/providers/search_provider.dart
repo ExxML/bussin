@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bussin/data/models/bus_route.dart';
 import 'package:bussin/data/models/bus_stop.dart';
@@ -55,8 +56,11 @@ final searchResultsProvider =
 
   // Don't search on empty query -- show recent searches instead
   if (query.isEmpty) {
+    debugPrint('[Search] Query is empty — returning empty results');
     return SearchResults(routes: [], stops: []);
   }
+
+  debugPrint('[Search] Querying: "$query"');
 
   // Execute route and stop searches in parallel for faster results
   final results = await Future.wait([
@@ -64,10 +68,20 @@ final searchResultsProvider =
     ref.read(stopRepositoryProvider).searchStops(query),
   ]);
 
-  return SearchResults(
+  final searchResults = SearchResults(
     routes: results[0] as List<BusRoute>,
     stops: results[1] as List<BusStop>,
   );
+
+  debugPrint('[Search] Results for "$query": '
+      '${searchResults.routes.length} routes, '
+      '${searchResults.stops.length} stops');
+
+  if (searchResults.isEmpty) {
+    debugPrint('[Search] WARNING: No results found for "$query"');
+  }
+
+  return searchResults;
 });
 
 /// Container class for combined search results.

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:bussin/data/datasources/gtfs_static_service.dart';
 import 'package:bussin/data/datasources/local_database_service.dart';
 import 'package:bussin/data/models/bus_route.dart';
@@ -26,6 +27,7 @@ class RouteRepository {
   /// Maps each database row to a [BusRoute] model.
   Future<List<BusRoute>> getAllRoutes() async {
     final rows = await LocalDatabaseService.db.query('gtfs_routes');
+    debugPrint('[RouteRepo] getAllRoutes() → ${rows.length} routes');
     return rows.map(_mapRowToRoute).toList();
   }
 
@@ -48,6 +50,7 @@ class RouteRepository {
   /// Matches routes where the short name or long name contains the [query]
   /// string (case-insensitive). Limited to 20 results for performance.
   Future<List<BusRoute>> searchRoutes(String query) async {
+    debugPrint('[RouteRepo] searchRoutes("$query") — querying SQLite...');
     final rows = await LocalDatabaseService.db.query(
       'gtfs_routes',
       where:
@@ -55,6 +58,16 @@ class RouteRepository {
       whereArgs: ['%$query%', '%$query%'],
       limit: 20,
     );
+    debugPrint('[RouteRepo] searchRoutes("$query") → ${rows.length} results');
+    if (rows.isEmpty) {
+      final totalCount = (await LocalDatabaseService.db
+              .rawQuery('SELECT COUNT(*) as cnt FROM gtfs_routes'))
+          .first['cnt'] as int;
+      debugPrint('[RouteRepo] WARNING: 0 results. Total routes in DB: $totalCount');
+      if (totalCount == 0) {
+        debugPrint('[RouteRepo] ✗ DATABASE IS EMPTY — GTFS data has not been imported!');
+      }
+    }
     return rows.map(_mapRowToRoute).toList();
   }
 

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bussin/core/theme/app_theme.dart';
 import 'package:bussin/core/theme/theme_provider.dart';
 import 'package:bussin/navigation/app_router.dart';
-import 'package:bussin/navigation/bottom_nav_bar.dart';
+import 'package:bussin/features/loading/gtfs_loading_screen.dart';
 
 /// ---------------------------------------------------------------------------
 /// BussinApp - Root application widget
@@ -36,7 +36,7 @@ class BussinApp extends ConsumerWidget {
       darkTheme: AppTheme.getTheme(Brightness.dark),
       themeMode: themeMode,
       routes: AppRouter.routes,
-      home: const MainScaffold(),
+      home: const GtfsLoadingScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
