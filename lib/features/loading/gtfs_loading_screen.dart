@@ -72,7 +72,7 @@ class _GtfsLoadingScreenState extends ConsumerState<GtfsLoadingScreen> {
               const SizedBox(height: 24.0),
 
               const Text(
-                'Bussin!',
+                'bussin!',
                 style: TextStyle(
                   fontSize: 28.0,
                   fontWeight: FontWeight.bold,
