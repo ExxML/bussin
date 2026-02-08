@@ -1,41 +1,22 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart' as ll;
 
-import 'package:bussin/core/constants/map_constants.dart';
-import 'package:bussin/core/constants/app_constants.dart';
 import 'package:bussin/providers/location_provider.dart';
 import 'package:bussin/providers/selected_route_provider.dart';
+import 'package:bussin/data/models/bus_stop.dart';
 import 'package:bussin/data/models/vehicle_position.dart';
+import 'package:bussin/providers/shape_providers.dart';
+import 'package:bussin/providers/stop_providers.dart';
 
-import 'package:bussin/features/map/widgets/route_polyline_layer.dart';
-import 'package:bussin/features/map/widgets/stop_marker_layer.dart';
-import 'package:bussin/features/map/widgets/bus_marker_layer.dart';
-import 'package:bussin/features/map/widgets/user_location_marker.dart';
 import 'package:bussin/features/map/controllers/map_controller_provider.dart';
 
 /// ---------------------------------------------------------------------------
-/// BusMap - The FlutterMap widget composing all map layers
+/// BusMap - The GoogleMap widget composing all map layers
 /// ---------------------------------------------------------------------------
-/// This is the core map widget that renders the OpenStreetMap tile layer and
-/// overlays all transit-specific layers on top:
-///
-/// 1. TileLayer - OSM base tiles
-/// 2. RoutePolylineLayer - Route path drawn when a route is selected
-/// 3. StopMarkerLayer - Stop circles along the selected route
-/// 4. BusMarkerLayer - Animated bus position markers
-/// 5. UserLocationMarker - Blue pulsing dot at user's GPS position
-/// 6. RichAttributionWidget - OSM + TransLink attribution
-///
-/// Uses [ConsumerStatefulWidget] with [TickerProviderStateMixin] because:
-/// - The [AnimatedMapController] requires a [TickerProvider] for its `vsync`
-///   parameter, which enables smooth animated map transitions (pan/zoom).
-/// - [TickerProviderStateMixin] makes this widget's State a valid TickerProvider.
-/// - The AnimatedMapController is created here and registered with the
-///   [mapControllerProvider] so other widgets (e.g., LocateMeButton) can
-///   programmatically move the map via the provider's notifier.
+/// This is the core map widget that renders the Google basemap and overlays
+/// transit-specific content (buses, route polylines, stops, and user location).
 ///
 /// Props:
 /// - [vehicles]: AsyncValue containing the list of active bus positions
@@ -72,117 +53,99 @@ class BusMap extends ConsumerStatefulWidget {
 /// [AnimatedMapController]. This is required because AnimatedMapController
 /// creates [AnimationController] instances internally, and those need a
 /// [TickerProvider] to drive their animations.
-class _BusMapState extends ConsumerState<BusMap> with TickerProviderStateMixin {
-  /// The animated map controller that wraps a raw [MapController] and provides
-  /// smooth animated movements (pan, zoom, rotate) via the flutter_map_animations
-  /// package. Created in [initState] with `this` as the vsync TickerProvider.
-  late final AnimatedMapController _animatedMapController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Create the AnimatedMapController with this widget's State as the
-    // TickerProvider (vsync). The AnimatedMapController internally creates
-    // a MapController if none is provided, so we let it manage its own.
-    // Animation duration of 500ms with easeOut curve for a snappy, natural feel.
-    _animatedMapController = AnimatedMapController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOut,
-    );
-
-    // Register the AnimatedMapController with the Riverpod provider after the
-    // first frame, so other widgets can trigger map movements (e.g., the
-    // LocateMeButton calling centerOnUser, or route selection fitting bounds).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(mapControllerProvider.notifier)
-          .setAnimatedMapController(_animatedMapController);
-    });
-  }
+ class _BusMapState extends ConsumerState<BusMap> {
+  GoogleMapController? _controller;
 
   @override
   void dispose() {
-    // Clear the provider's reference first to prevent any late calls
-    // to a disposed controller.
-    ref.read(mapControllerProvider.notifier).clearAnimatedMapController();
-
-    // Dispose the AnimatedMapController, which stops any running animations
-    // and disposes internal AnimationControllers. It also disposes the
-    // internally-created MapController since we didn't pass one in.
-    _animatedMapController.dispose();
-
+    ref.read(mapControllerProvider.notifier).clearGoogleMapController();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch the user's GPS position stream for the blue dot marker.
-    // Returns null while loading or on error (marker won't render).
     final userPosition = ref.watch(currentLocationProvider).value;
 
-    // Extract the vehicle list from AsyncValue, defaulting to empty list
-    // during loading or error states so the map still renders.
+    final selectedRouteId = ref.watch(selectedRouteProvider);
+
+    final AsyncValue<List<ll.LatLng>> shapeAsync = selectedRouteId != null
+        ? ref.watch(routeShapeProvider(selectedRouteId))
+        : const AsyncData(<ll.LatLng>[]);
+
+    final AsyncValue<List<BusStop>> stopsAsync = selectedRouteId != null
+        ? ref.watch(stopsForRouteProvider(selectedRouteId))
+        : const AsyncData(<BusStop>[]);
+
     final vehicleList = widget.vehicles.value ?? [];
 
-    return FlutterMap(
-      // Use the AnimatedMapController's internal mapController so that
-      // animated movements are properly wired to this FlutterMap instance.
-      mapController: _animatedMapController.mapController,
-      options: MapOptions(
-        // Center the map on Vancouver, BC on first load
-        initialCenter: MapConstants.vancouverCenter,
-        initialZoom: MapConstants.defaultZoom,
+    final markers = <Marker>{
+      for (final vehicle in vehicleList)
+        Marker(
+          markerId: MarkerId('bus_${vehicle.vehicleId}'),
+          position: LatLng(vehicle.latitude, vehicle.longitude),
+          onTap: () => widget.onBusTapped(vehicle),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        ),
+    };
 
-        // Clamp zoom to prevent zooming out to world view or past tile detail
-        minZoom: MapConstants.minZoom,
-        maxZoom: MapConstants.maxZoom,
+    if (userPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user_location'),
+          position: LatLng(userPosition.latitude, userPosition.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
+
+    final polylines = <Polyline>{};
+    final routePoints = shapeAsync.asData?.value ?? const <ll.LatLng>[];
+    if (routePoints.isNotEmpty) {
+      final googlePoints = routePoints
+          .map((p) => LatLng(p.latitude, p.longitude))
+          .toList(growable: false);
+
+      if (googlePoints.isNotEmpty) {
+        polylines.add(
+          Polyline(
+            polylineId: const PolylineId('selected_route'),
+            points: googlePoints,
+            color: const Color(0xFF0060A9),
+            width: 4,
+          ),
+        );
+      }
+    }
+
+    final stops = stopsAsync.asData?.value ?? const <BusStop>[];
+    if (stops.isNotEmpty) {
+      for (final stop in stops) {
+        markers.add(
+          Marker(
+            markerId: MarkerId('stop_${stop.stopId}'),
+            position: LatLng(stop.stopLat, stop.stopLon),
+            icon: BitmapDescriptor.defaultMarker,
+          ),
+        );
+      }
+    }
+
+    return GoogleMap(
+      initialCameraPosition: const CameraPosition(
+        target: LatLng(49.2827, -123.1207),
+        zoom: 13.0,
       ),
-      children: [
-        // ---- Layer 1: Base map tiles (OpenStreetMap) ----
-        // The bottom-most layer providing the geographic context.
-        // Uses OSM tiles which are free and require no API key,
-        // but do require a user agent string for tile policy compliance.
-        TileLayer(
-          urlTemplate: MapConstants.tileUrl,
-          userAgentPackageName: MapConstants.userAgentPackage,
-        ),
-
-        // ---- Layer 2: Route polyline (selected route path) ----
-        // Draws the geographic path of the currently selected route.
-        // Renders nothing (empty SizedBox) when no route is selected.
-        RoutePolylineLayer(routeId: widget.selectedRouteId),
-
-        // ---- Layer 3: Stop markers along the selected route ----
-        // Small gray circles at each stop on the route.
-        // Renders nothing when no route is selected.
-        StopMarkerLayer(routeId: widget.selectedRouteId),
-
-        // ---- Layer 4: Bus position markers ----
-        // Animated markers showing each active bus's real-time position.
-        // Markers smoothly interpolate between old and new positions
-        // during polling updates for fluid visual movement.
-        BusMarkerLayer(
-          vehicles: vehicleList,
-          onBusTapped: widget.onBusTapped,
-        ),
-
-        // ---- Layer 5: User GPS location (blue pulsing dot) ----
-        // Shows the user's current position with a pulsing animation.
-        // Renders nothing if location permission is denied or unavailable.
-        UserLocationMarker(position: userPosition),
-
-        // ---- Layer 6: Attribution (required by OSM and TransLink ToS) ----
-        // Displays attribution text for OpenStreetMap tiles and TransLink data.
-        // Uses RichAttributionWidget for a collapsible attribution panel.
-        RichAttributionWidget(
-          attributions: [
-            TextSourceAttribution('OpenStreetMap contributors'),
-            TextSourceAttribution(AppConstants.translinkAttribution),
-          ],
-        ),
-      ],
+      myLocationEnabled: false,
+      myLocationButtonEnabled: false,
+      compassEnabled: false,
+      mapToolbarEnabled: false,
+      zoomControlsEnabled: false,
+      markers: markers,
+      polylines: polylines,
+      onMapCreated: (controller) {
+        _controller = controller;
+        ref.read(mapControllerProvider.notifier).setGoogleMapController(controller);
+      },
     );
   }
 }

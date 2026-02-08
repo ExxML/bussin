@@ -9,6 +9,11 @@ class ApiConstants {
   static const String translinkApiKey =
       String.fromEnvironment('TRANSLINK_API_KEY');
 
+  /// Google Maps API key loaded from compile-time --dart-define flag.
+  /// Usage: flutter run --dart-define=GOOGLE_MAPS_API_KEY=your_key_here
+  static const String googleMapsApiKey =
+      String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+
   /// GTFS-RT V3 endpoint for real-time vehicle positions (protobuf binary).
   static const String gtfsPositionUrl =
       'https://gtfsapi.translink.ca/v3/gtfsposition';

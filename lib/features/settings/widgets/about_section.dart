@@ -57,8 +57,7 @@ class AboutSection extends StatelessWidget {
           leading: Icon(Icons.map_outlined),
           title: Text('Map Data'),
           subtitle: Text(
-            'Map tiles by OpenStreetMap contributors. '
-            'Data is available under the Open Database License.',
+            'Map data © Google.',
           ),
         ),
 

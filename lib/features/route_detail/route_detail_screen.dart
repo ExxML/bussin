@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
+import 'package:latlong2/latlong.dart' as ll;
 
 import 'package:bussin/providers/route_providers.dart';
 import 'package:bussin/providers/vehicle_providers.dart';
@@ -136,8 +136,8 @@ class RouteDetailScreen extends ConsumerWidget {
             // Extract the polyline points (or empty while loading).
             final shapePoints = shapeAsync.when(
               data: (points) => points,
-              loading: () => <LatLng>[],
-              error: (_, __) => <LatLng>[],
+              loading: () => <ll.LatLng>[],
+              error: (_, __) => <ll.LatLng>[],
             );
 
             // Extract service alerts (or empty while loading).
@@ -283,7 +283,7 @@ class RouteDetailScreen extends ConsumerWidget {
   /// Uses FlutterMap with an OpenStreetMap TileLayer, a PolylineLayer for the
   /// route shape, and a MarkerLayer for active bus positions.
   Widget _buildMiniMap(
-    List<LatLng> shapePoints,
+    List<ll.LatLng> shapePoints,
     List<VehiclePositionModel> vehicles,
     Color polylineColor,
   ) {
@@ -296,6 +296,31 @@ class RouteDetailScreen extends ConsumerWidget {
     // Determine appropriate zoom: tighter if we have shape data.
     final zoom = shapePoints.isNotEmpty ? 12.0 : MapConstants.defaultZoom;
 
+    final markers = <gmaps.Marker>{
+      for (final v in vehicles)
+        gmaps.Marker(
+          markerId: gmaps.MarkerId('bus_${v.vehicleId}'),
+          position: gmaps.LatLng(v.latitude, v.longitude),
+          icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(
+            gmaps.BitmapDescriptor.hueAzure,
+          ),
+        ),
+    };
+
+    final polylines = <gmaps.Polyline>{};
+    if (shapePoints.isNotEmpty) {
+      polylines.add(
+        gmaps.Polyline(
+          polylineId: const gmaps.PolylineId('route_shape'),
+          points: shapePoints
+              .map((p) => gmaps.LatLng(p.latitude, p.longitude))
+              .toList(growable: false),
+          color: polylineColor,
+          width: 4,
+        ),
+      );
+    }
+
     return Container(
       height: 200.0,
       margin: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -303,61 +328,22 @@ class RouteDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
       ),
-      child: FlutterMap(
-        options: MapOptions(
-          initialCenter: center,
-          initialZoom: zoom,
-          // Disable user interaction on the mini map to prevent conflicts
-          // with the parent scroll view.
-          interactionOptions: const InteractionOptions(
-            flags: InteractiveFlag.none,
-          ),
+      child: gmaps.GoogleMap(
+        initialCameraPosition: gmaps.CameraPosition(
+          target: gmaps.LatLng(center.latitude, center.longitude),
+          zoom: zoom,
         ),
-        children: [
-          // Base map tiles from OpenStreetMap.
-          TileLayer(
-            urlTemplate: MapConstants.tileUrl,
-            userAgentPackageName: MapConstants.userAgentPackage,
-          ),
-
-          // Route polyline overlay (only drawn if shape data exists).
-          if (shapePoints.isNotEmpty)
-            PolylineLayer(
-              polylines: [
-                Polyline(
-                  points: shapePoints,
-                  color: polylineColor,
-                  strokeWidth: 4.0,
-                ),
-              ],
-            ),
-
-          // Active bus markers.
-          MarkerLayer(
-            markers: vehicles.map((v) {
-              return Marker(
-                point: LatLng(v.latitude, v.longitude),
-                width: 24.0,
-                height: 24.0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: polylineColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: CupertinoColors.white,
-                      width: 2.0,
-                    ),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.bus,
-                    size: 12.0,
-                    color: CupertinoColors.white,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+        markers: markers,
+        polylines: polylines,
+        myLocationEnabled: false,
+        myLocationButtonEnabled: false,
+        compassEnabled: false,
+        mapToolbarEnabled: false,
+        zoomControlsEnabled: false,
+        scrollGesturesEnabled: false,
+        rotateGesturesEnabled: false,
+        tiltGesturesEnabled: false,
+        zoomGesturesEnabled: false,
       ),
     );
   }

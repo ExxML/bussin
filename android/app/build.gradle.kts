@@ -1,8 +1,26 @@
+ import org.gradle.api.GradleException
+ 
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+fun loadDotEnv(file: File): Map<String, String> {
+    if (!file.exists()) return emptyMap()
+    return file.readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") }
+        .mapNotNull { line ->
+            val idx = line.indexOf('=')
+            if (idx <= 0) return@mapNotNull null
+            val key = line.substring(0, idx).trim()
+            val value = line.substring(idx + 1).trim().trim('"', '\'')
+            if (key.isEmpty()) return@mapNotNull null
+            key to value
+        }
+        .toMap()
 }
 
 android {
@@ -29,6 +47,18 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        val repoRoot = rootProject.projectDir.parentFile
+        val env = loadDotEnv(File(repoRoot, ".env"))
+        val googleMapsApiKey = (env["GOOGLE_MAPS_API_KEY"] ?: System.getenv("GOOGLE_MAPS_API_KEY") ?: "").trim()
+
+        if (googleMapsApiKey.isEmpty()) {
+            throw GradleException(
+                "Missing GOOGLE_MAPS_API_KEY. Add it to the repo root .env file (GOOGLE_MAPS_API_KEY=...) or set it as an environment variable."
+            )
+        }
+
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
     }
 
     buildTypes {
