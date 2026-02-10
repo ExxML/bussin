@@ -13,6 +13,14 @@ A real-time Vancouver bus tracking app that shows live vehicle positions, ETAs, 
 
 </div>
 
+## 👀 Preview
+
+<div align="center">
+  <img src="previews/bus_route_details_preview.png" alt="Route details" width="32%" />
+  <img src="previews/nearby_stops_preview.png" alt="Nearby stops" width="32%" />
+  <img src="previews/bus_stop_details_preview.png" alt="Stop details" width="32%" />
+</div>
+
 ## 📑 Table of Contents
 
 - [✨ Features](#-features)
